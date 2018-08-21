@@ -2,7 +2,7 @@ package com.cs.stru.rpc.common;
 
 /**
  * 封装 RPC 请求
- *	封装发送的object的反射属性
+ * 封装发送的object的反射属性
  */
 public class RpcRequest {
 

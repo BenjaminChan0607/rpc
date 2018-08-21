@@ -3,17 +3,17 @@ package com.cs.stru.rpc.common;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
+
 import java.util.List;
 
 /**
  * RPC 解码器
- *
  */
 public class RpcDecoder extends ByteToMessageDecoder {
 
     private Class<?> genericClass;
 
-	// 构造函数传入向反序列化的class
+    // 构造函数传入向反序列化的class
     public RpcDecoder(Class<?> genericClass) {
         this.genericClass = genericClass;
     }

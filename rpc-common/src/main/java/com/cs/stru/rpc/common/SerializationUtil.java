@@ -4,16 +4,14 @@ import com.dyuproject.protostuff.LinkedBuffer;
 import com.dyuproject.protostuff.ProtostuffIOUtil;
 import com.dyuproject.protostuff.Schema;
 import com.dyuproject.protostuff.runtime.RuntimeSchema;
+import org.objenesis.Objenesis;
+import org.objenesis.ObjenesisStd;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.objenesis.Objenesis;
-import org.objenesis.ObjenesisStd;
-
 /**
  * 序列化工具类（基于 Protostuff 实现）
- *
  */
 public class SerializationUtil {
 
@@ -23,8 +21,10 @@ public class SerializationUtil {
 
     private SerializationUtil() {
     }
+
     /**
      * 获取类的schema
+     *
      * @param cls
      * @return
      */
@@ -62,7 +62,7 @@ public class SerializationUtil {
      */
     public static <T> T deserialize(byte[] data, Class<T> cls) {
         try {
-        	/*
+            /*
         	 * 如果一个类没有参数为空的构造方法时候，那么你直接调用newInstance方法试图得到一个实例对象的时候是会抛出异常的
         	 * 通过ObjenesisStd可以完美的避开这个问题
         	 * */
