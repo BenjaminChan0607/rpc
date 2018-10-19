@@ -1,4 +1,4 @@
-package com.cs.stru.sample.server;
+package com.cs.stru.rpc.sample.server;
 
 
 import com.cs.stru.rpc.sample.client.HelloService;

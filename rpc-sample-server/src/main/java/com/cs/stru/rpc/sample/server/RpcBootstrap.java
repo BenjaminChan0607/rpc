@@ -1,4 +1,4 @@
-package com.cs.stru.sample.server;
+package com.cs.stru.rpc.sample.server;
 
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -12,6 +12,6 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 public class RpcBootstrap {
 
     public static void main(String[] args) {
-        new ClassPathXmlApplicationContext("spring.xml");
+        new ClassPathXmlApplicationContext("spring-server.xml");
     }
 }

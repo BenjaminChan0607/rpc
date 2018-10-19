@@ -1,4 +1,4 @@
-package com.cs.stru.sample.app;
+package com.cs.stru.rpc.sample.app;
 
 import com.cs.stru.rpc.client.RpcProxy;
 import com.cs.stru.rpc.sample.client.HelloService;
@@ -18,20 +18,26 @@ public class HelloServiceTest {
 
     @Test
     public void helloTest1() {
-        // 调用代理的create方法，代理HelloService接口
-        HelloService helloService = rpcProxy.create(HelloService.class);
+        try {
+            long startTime = System.currentTimeMillis();
 
-        // 调用代理的方法，执行invoke
-        String result = helloService.hello("World");
-        System.out.println("服务端返回结果：");
-        System.out.println(result);
+            // 调用代理的create方法，代理HelloService接口
+            HelloService helloService = rpcProxy.create(HelloService.class);
+            // 调用代理的方法，执行invoke
+            String result = helloService.hello("World");
+            System.out.println("服务端返回结果：" + result);
+
+            long endTime = System.currentTimeMillis();
+            System.out.println("endTime:" + endTime + " interval:" + (endTime - startTime));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
     public void helloTest2() {
         HelloService helloService = rpcProxy.create(HelloService.class);
         String result = helloService.hello(new Person("Yong", "Huang"));
-        System.out.println("服务端返回结果：");
-        System.out.println(result);
+        System.out.println("服务端返回结果：" + result);
     }
 }

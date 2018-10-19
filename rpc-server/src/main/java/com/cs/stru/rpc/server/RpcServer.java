@@ -79,6 +79,8 @@ public class RpcServer implements ApplicationContextAware, InitializingBean {
      * 3、将业务调用结果封装到response并序列化后发往客户端
      */
     public void afterPropertiesSet() throws Exception {
+        long startTime = System.currentTimeMillis();
+
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
@@ -105,6 +107,9 @@ public class RpcServer implements ApplicationContextAware, InitializingBean {
 
             ChannelFuture future = bootstrap.bind(host, port).sync();
             LOGGER.debug("server started on port {}", port);
+
+            long endTime = System.currentTimeMillis();
+            System.out.println("execution time:" + (endTime - startTime));
 
             if (serviceRegistry != null) {
                 serviceRegistry.register(serverAddress);

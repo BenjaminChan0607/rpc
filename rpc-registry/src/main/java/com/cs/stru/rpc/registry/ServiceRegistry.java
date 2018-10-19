@@ -73,10 +73,10 @@ public class ServiceRegistry {
     private void createNode(ZooKeeper zk, String data) {
         try {
             byte[] bytes = data.getBytes();
-            if (zk.exists(Constant.ZK_REGISTRY_PATH, null) == null) {
-                zk.create(Constant.ZK_REGISTRY_PATH, null, Ids.OPEN_ACL_UNSAFE,
-                        CreateMode.PERSISTENT);
-            }
+//            if (zk.exists(Constant.ZK_REGISTRY_PATH, null) == null) {
+//                zk.create(Constant.ZK_REGISTRY_PATH, null, Ids.OPEN_ACL_UNSAFE,
+//                        CreateMode.PERSISTENT);
+//            }
 
             String path = zk.create(Constant.ZK_DATA_PATH, bytes,
                     Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
