@@ -13,6 +13,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import org.apache.commons.collections4.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,8 +80,6 @@ public class RpcServer implements ApplicationContextAware, InitializingBean {
      * 3、将业务调用结果封装到response并序列化后发往客户端
      */
     public void afterPropertiesSet() throws Exception {
-        long startTime = System.currentTimeMillis();
-
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
@@ -93,9 +92,10 @@ public class RpcServer implements ApplicationContextAware, InitializingBean {
                         public void initChannel(SocketChannel channel)
                                 throws Exception {
                             channel.pipeline()
+                                    .addLast(new LengthFieldBasedFrameDecoder(65536, 0, 4, 0, 0))
                                     .addLast(new RpcDecoder(RpcRequest.class))// 注册解码 IN-1
                                     .addLast(new RpcEncoder(RpcResponse.class))// 注册编码 OUT
-                                    .addLast(new RpcHandler(handlerMap));//注册RpcHandler IN-2
+                                    .addLast(new RpcServerHandler(handlerMap));//注册RpcHandler IN-2
                         }
                     }).option(ChannelOption.SO_BACKLOG, 128)
                     .childOption(ChannelOption.SO_KEEPALIVE, true);
@@ -108,9 +108,9 @@ public class RpcServer implements ApplicationContextAware, InitializingBean {
             ChannelFuture future = bootstrap.bind(host, port).sync();
             LOGGER.debug("server started on port {}", port);
 
-            long endTime = System.currentTimeMillis();
-            System.out.println("execution time:" + (endTime - startTime));
-
+            /**
+             * 耗时将近十秒钟，亟待优化
+             */
             if (serviceRegistry != null) {
                 serviceRegistry.register(serverAddress);
             }

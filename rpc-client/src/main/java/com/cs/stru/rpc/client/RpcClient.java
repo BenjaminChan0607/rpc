@@ -1,99 +1,70 @@
 package com.cs.stru.rpc.client;
 
-import com.cs.stru.rpc.common.RpcDecoder;
-import com.cs.stru.rpc.common.RpcEncoder;
 import com.cs.stru.rpc.common.RpcRequest;
 import com.cs.stru.rpc.common.RpcResponse;
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.*;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.cs.stru.rpc.registry.ServiceDiscovery;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.UUID;
 
 /**
- * 框架的RPC 客户端（用于发送 RPC 请求）
+ * RPC Client（用于创建 RPC 服务代理）
  */
-public class RpcClient extends SimpleChannelInboundHandler<RpcResponse> {
+public class RpcClient {
 
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(RpcClient.class);
+    private String serverAddress;
+    private ServiceDiscovery serviceDiscovery;
 
-    private String host;
-    private int port;
+    public RpcClient(String serverAddress) {
+        this.serverAddress = serverAddress;
+    }
 
-    private RpcResponse response;
-
-    private final Object obj = new Object();
-
-    public RpcClient(String host, int port) {
-        this.host = host;
-        this.port = port;
+    public RpcClient(ServiceDiscovery serviceDiscovery) {
+        this.serviceDiscovery = serviceDiscovery;
     }
 
     /**
-     * 链接服务端，发送消息
+     * 创建代理
      *
-     * @param request
+     * @param interfaceClass
      * @return
-     * @throws Exception
      */
-    public RpcResponse send(RpcRequest request) throws Exception {
-        EventLoopGroup group = new NioEventLoopGroup();
-        try {
-            Bootstrap bootstrap = new Bootstrap();
-            bootstrap.group(group).channel(NioSocketChannel.class)
-                    .handler(new ChannelInitializer<SocketChannel>() {
-                        @Override
-                        public void initChannel(SocketChannel channel)
-                                throws Exception {
-                            // 向pipeline中添加编码、解码、业务处理的handler
-                            channel.pipeline()
-                                    .addLast(new RpcEncoder(RpcRequest.class))  //OUT - 1
-                                    .addLast(new RpcDecoder(RpcResponse.class)) //IN - 1
-                                    .addLast(RpcClient.this);                   //IN - 2
+    @SuppressWarnings("unchecked")
+    public <T> T create(Class<?> interfaceClass) {
+        return (T) Proxy.newProxyInstance(interfaceClass.getClassLoader(),
+                new Class<?>[]{interfaceClass}, new InvocationHandler() {
+                    public Object invoke(Object proxy, Method method,
+                                         Object[] args) throws Throwable {
+                        //创建RpcRequest，封装被代理类的属性
+                        RpcRequest request = new RpcRequest();
+                        request.setRequestId(UUID.randomUUID().toString());
+                        //拿到声明这个方法的业务接口名称
+                        request.setClassName(method.getDeclaringClass()
+                                .getName());
+                        request.setMethodName(method.getName());
+                        request.setParameterTypes(method.getParameterTypes());
+                        request.setParameters(args);
+                        //查找服务
+                        if (serviceDiscovery != null) {
+                            serverAddress = serviceDiscovery.discover();
                         }
-                    }).option(ChannelOption.SO_KEEPALIVE, true);
-            // 链接服务器
-            ChannelFuture future = bootstrap.connect(host, port).sync();
-            //将request对象写入outbundle处理后发出（即RpcEncoder编码器）
-            future.channel().writeAndFlush(request).sync();
-
-            // 用线程等待的方式决定是否关闭连接
-            // 其意义是：先在此阻塞，等待获取到服务端的返回后，被唤醒，从而关闭网络连接
-            synchronized (obj) {
-                obj.wait();
-            }
-            if (response != null) {
-                future.channel().closeFuture().sync();
-            }
-            return response;
-        } finally {
-            group.shutdownGracefully();
-        }
-    }
-
-    /**
-     * 读取服务端的返回结果
-     */
-    @Override
-    public void channelRead0(ChannelHandlerContext ctx, RpcResponse response)
-            throws Exception {
-        this.response = response;
-
-        synchronized (obj) {
-            obj.notifyAll();
-        }
-    }
-
-    /**
-     * 异常处理
-     */
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
-            throws Exception {
-        LOGGER.error("client caught exception", cause);
-        ctx.close();
+                        //随机获取服务的地址
+                        String[] array = serverAddress.split(":");
+                        String host = array[0];
+                        int port = Integer.parseInt(array[1]);
+                        //创建Netty实现的RpcClient，链接服务端
+                        RpcClientHandler rpcClientHandler = new RpcClientHandler(host, port);
+                        //通过netty向服务端发送请求
+                        RpcResponse response = rpcClientHandler.send(request);
+                        //返回信息
+                        if (response.isError()) {
+                            throw response.getError();
+                        } else {
+                            return response.getResult();
+                        }
+                    }
+                });
     }
 }

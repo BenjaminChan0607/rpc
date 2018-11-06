@@ -8,6 +8,7 @@ import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -41,6 +42,8 @@ public class ServiceRegistry {
         }
     }
 
+    private volatile long startTime = 0;
+
     /**
      * 创建zookeeper链接，监听
      *
@@ -49,17 +52,23 @@ public class ServiceRegistry {
     private ZooKeeper connectServer() {
         ZooKeeper zk = null;
         try {
-            zk = new ZooKeeper(registryAddress, Constant.ZK_SESSION_TIMEOUT,
-                    new Watcher() {
-                        public void process(WatchedEvent event) {
-                            if (event.getState() == Event.KeeperState.SyncConnected) {
-                                latch.countDown();
-                            }
-                        }
-                    });
+            zk = new ZooKeeper(registryAddress, Constant.ZK_SESSION_TIMEOUT, new Watcher() {
+                @Override
+                public void process(WatchedEvent event) {
+                    if (event.getState() == Event.KeeperState.SyncConnected) {
+                        latch.countDown();
+                        System.out.println("interval:" + (System.currentTimeMillis() - startTime));
+                    }
+                }
+            });
+
+            startTime = System.currentTimeMillis();
+            System.out.println("startTime:" + startTime);
             latch.await();
-        } catch (Exception e) {
+        } catch (IOException e) {
             LOGGER.error("", e);
+        } catch (InterruptedException ex) {
+            LOGGER.error("", ex);
         }
         return zk;
     }
@@ -73,10 +82,10 @@ public class ServiceRegistry {
     private void createNode(ZooKeeper zk, String data) {
         try {
             byte[] bytes = data.getBytes();
-//            if (zk.exists(Constant.ZK_REGISTRY_PATH, null) == null) {
-//                zk.create(Constant.ZK_REGISTRY_PATH, null, Ids.OPEN_ACL_UNSAFE,
-//                        CreateMode.PERSISTENT);
-//            }
+            if (zk.exists(Constant.ZK_REGISTRY_PATH, null) == null) {
+                zk.create(Constant.ZK_REGISTRY_PATH, null, Ids.OPEN_ACL_UNSAFE,
+                        CreateMode.PERSISTENT);
+            }
 
             String path = zk.create(Constant.ZK_DATA_PATH, bytes,
                     Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);

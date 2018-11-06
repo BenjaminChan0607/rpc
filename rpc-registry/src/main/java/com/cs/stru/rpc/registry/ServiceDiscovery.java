@@ -32,17 +32,9 @@ public class ServiceDiscovery {
      */
     public ServiceDiscovery(String registryAddress) {
         this.registryAddress = registryAddress;
-
-        long startTime = System.currentTimeMillis();
         ZooKeeper zk = connectServer();
-
-        long endTime = System.currentTimeMillis();
-        System.out.println("endTime:" + endTime + " interval:" + (endTime - startTime));
         if (zk != null) {
-            startTime = System.currentTimeMillis();
             watchNode(zk);
-            endTime = System.currentTimeMillis();
-            System.out.println("endTime:" + endTime + " interval:" + (endTime - startTime));
         }
     }
 
